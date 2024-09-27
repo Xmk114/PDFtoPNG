@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF转换器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .button {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #3e8e41;
+        }
+        .error {
+            color: red;
+        }
+        .image-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .image-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .image-preview img:hover {
+            transform: scale(1.1);
+        }
+        .image-preview a {
+            display: block;
+            margin-top: 10px;
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        .image-preview a:hover {
+            color: #0056b3;
+        }
+        .download-all {
+            display: inline-block;
+            margin-top: 20px;
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .download-all:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF转换器</h1>
+        <form id="upload-form">
+            <label for="file">选择PDF文件</label>
+            <input type="file" id="file" name="file" accept=".pdf">
+            <button class="button" type="submit">上传文件</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // 获取页面元素
+        const form = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file');
+        const resultDiv = document.getElementById('result');
+
+        // 监听表单提交事件
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            // 获取选中的文件
+            const file = fileInput.files[0];
+
+            // 检查是否选中文件
+            if (!file) {
+                resultDiv.innerHTML = '<p class="error">请先选择文件</p>';
+                return;
+            }
+
+            // 创建FormData对象
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // 发送POST请求到服务器
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                // 处理响应数据
+                if (data.error) {
+                    resultDiv.innerHTML = `<p class="error">${data.error}</p>`;
+                } else {
+                    // 生成图片预览HTML
+                    const imagesHtml = data.images.map((image) => `
+                        <div>
+                            <img src="${image}" alt="PDF Page ${image.split('_').pop().split('.')[0]}" onclick="window.open('${image}', '_blank')">
+                            <a href="${image}" download>下载图像</a>
+                        </div>
+                    `).join('');
+
+                    // 生成ZIP文件下载链接HTML
+                    const zipFileHtml = `<a href="${data.zip_file}" class="download-all" download>下载所有图像 (ZIP)</a>`;
+
+                    // 更新结果区域HTML
+                    resultDiv.innerHTML = `<div class="image-preview">${imagesHtml}</div>${zipFileHtml}`;
+                }
+            })
+            .catch((error) => {
+                console.error(error);
+                resultDiv.innerHTML = `<p class="error">上传失败</p>`;
+            });
+        });
+    </script>
+</body>
+</html>
